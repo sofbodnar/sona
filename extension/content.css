@@ -1,0 +1,55 @@
+/* Sona Research Assistant Content Styles */
+
+#sona-ask-button {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+#sona-popup {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Ensure Sona elements have proper z-index */
+#sona-ask-button,
+#sona-popup {
+    z-index: 2147483647 !important;
+}
+
+/* Smooth animations for Sona elements */
+#sona-ask-button {
+    animation: sonaFadeIn 0.3s ease-out;
+}
+
+#sona-popup {
+    animation: sonaSlideIn 0.3s ease-out;
+}
+
+@keyframes sonaFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes sonaSlideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+/* Override any conflicting styles */
+#sona-ask-button * {
+    box-sizing: border-box !important;
+}
+
+#sona-popup * {
+    box-sizing: border-box !important;
+}
