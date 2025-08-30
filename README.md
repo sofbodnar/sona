@@ -1,4 +1,4 @@
-# sona
+# Sona
 Sona is a  research assistant that integrates into your browser and assists in real-time with content understanding, synthesis, and contextual analysis. 
 
 
