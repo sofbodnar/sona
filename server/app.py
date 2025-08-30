@@ -4,6 +4,8 @@ import os
 import json
 from datetime import datetime
 import re
+import arxiv
+import requests
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -103,25 +105,101 @@ def search_related():
         if not query:
             return jsonify({'error': 'No query provided'}), 400
         
-        # TODO: Implement actual search using Google Scholar API, YouTube API, etc.
-        mock_results = {
-            'papers': [
-                {'title': f'Research paper about {query}', 'url': 'https://example.com/paper1'},
-                {'title': f'Advanced studies in {query}', 'url': 'https://example.com/paper2'}
-            ],
-            'videos': [
-                {'title': f'{query} explained', 'url': 'https://youtube.com/watch?v=example1'},
-                {'title': f'Introduction to {query}', 'url': 'https://youtube.com/watch?v=example2'}
-            ]
+        # Search arXiv for academic papers
+        papers = search_arxiv_papers(query)
+        
+        # Search YouTube for educational videos
+        videos = search_youtube_videos(query)
+        
+        results = {
+            'papers': papers,
+            'videos': videos,
+            'query': query
         }
         
         return jsonify({
-            'results': mock_results,
+            'results': results,
             'success': True
         })
         
     except Exception as e:
         return jsonify({'error': str(e), 'success': False}), 500
+
+def search_arxiv_papers(query, max_results=5):
+    """
+    Search arXiv for academic papers related to the query
+    """
+    try:
+        search = arxiv.Search(
+            query=query,
+            max_results=max_results,
+            sort_by=arxiv.SortCriterion.Relevance
+        )
+        
+        papers = []
+        for result in search.results():
+            papers.append({
+                'title': result.title,
+                'authors': [author.name for author in result.authors],
+                'summary': result.summary[:300] + "..." if len(result.summary) > 300 else result.summary,
+                'url': result.entry_id,
+                'pdf_url': result.pdf_url,
+                'published': result.published.isoformat() if result.published else None,
+                'categories': result.categories
+            })
+        
+        return papers
+        
+    except Exception as e:
+        print(f"arXiv search error: {e}")
+        return []
+
+def search_youtube_videos(query):
+    """
+    Search YouTube for educational videos related to the query
+    """
+    youtube_api_key = os.getenv('YOUTUBE_API_KEY')
+    
+    if not youtube_api_key:
+        # Return mock data if no API key is provided
+        return [
+            {'title': f'{query} - Educational Video', 'url': f'https://youtube.com/search?q={query.replace(" ", "+")}+tutorial'},
+            {'title': f'Introduction to {query}', 'url': f'https://youtube.com/search?q={query.replace(" ", "+")}+introduction'}
+        ]
+    
+    try:
+        # YouTube Data API v3 search
+        search_url = "https://www.googleapis.com/youtube/v3/search"
+        params = {
+            'part': 'snippet',
+            'q': f'{query} tutorial explanation',
+            'type': 'video',
+            'key': youtube_api_key,
+            'maxResults': 5,
+            'order': 'relevance'
+        }
+        
+        response = requests.get(search_url, params=params)
+        data = response.json()
+        
+        videos = []
+        if 'items' in data:
+            for item in data['items']:
+                videos.append({
+                    'title': item['snippet']['title'],
+                    'description': item['snippet']['description'][:200] + "..." if len(item['snippet']['description']) > 200 else item['snippet']['description'],
+                    'url': f"https://youtube.com/watch?v={item['id']['videoId']}",
+                    'thumbnail': item['snippet']['thumbnails']['default']['url'],
+                    'channel': item['snippet']['channelTitle'],
+                    'published': item['snippet']['publishedAt']
+                })
+        
+        return videos
+        
+    except Exception as e:
+        print(f"YouTube search error: {e}")
+        # Return search link as fallback
+        return [{'title': f'Search YouTube for "{query}"', 'url': f'https://youtube.com/search?q={query.replace(" ", "+")}'}]
 
 def generate_explanation(text, context):
     """
